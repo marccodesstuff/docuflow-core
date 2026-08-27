@@ -1,0 +1,148 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-create-webhook-registrations-table
+      author: docuflow
+      changes:
+        - createTable:
+            tableName: webhook_registrations
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_webhook_registrations
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: url
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: secret
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: boolean
+                  defaultValue: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: consecutive_failures
+                  type: int
+                  defaultValue: 0
+              - column:
+                  name: last_success_at
+                  type: timestamp
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 004-create-webhook-events-table
+      author: docuflow
+      changes:
+        - createTable:
+            tableName: webhook_events
+            columns:
+              - column:
+                  name: webhook_registration_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_webhook_events_registration
+                    references: webhook_registrations(id)
+              - column:
+                  name: event_type
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 004-create-webhook-deliveries-table
+      author: docuflow
+      changes:
+        - createTable:
+            tableName: webhook_deliveries
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_webhook_deliveries
+              - column:
+                  name: webhook_registration_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_webhook_deliveries_registration
+                    references: webhook_registrations(id)
+              - column:
+                  name: event_type
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payload
+                  type: jsonb
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status_code
+                  type: int
+              - column:
+                  name: response_body
+                  type: text
+              - column:
+                  name: error_message
+                  type: varchar(2000)
+              - column:
+                  name: attempt_number
+                  type: int
+                  defaultValue: 1
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: delivered_at
+                  type: timestamp
+
+  - changeSet:
+      id: 004-create-webhook-indexes
+      author: docuflow
+      changes:
+        - createIndex:
+            tableName: webhook_registrations
+            indexName: idx_webhook_registrations_tenant_id
+            columns:
+              - column:
+                  name: tenant_id
+        - createIndex:
+            tableName: webhook_registrations
+            indexName: idx_webhook_registrations_active
+            columns:
+              - column:
+                  name: active
+        - createIndex:
+            tableName: webhook_deliveries
+            indexName: idx_webhook_deliveries_registration_id
+            columns:
+              - column:
+                  name: webhook_registration_id
+        - createIndex:
+            tableName: webhook_deliveries
+            indexName: idx_webhook_deliveries_created_at
+            columns:
+              - column:
+                  name: created_at

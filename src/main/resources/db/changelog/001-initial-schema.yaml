@@ -1,0 +1,384 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-documents-table
+      author: docuflow
+      changes:
+        - createTable:
+            tableName: documents
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_documents
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: document_type_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: original_filename
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: storage_path
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: mime_type
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: size_bytes
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: metadata
+                  type: jsonb
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: processed_at
+                  type: timestamp
+
+  - changeSet:
+      id: 001-create-document-pages-table
+      author: docuflow
+      changes:
+        - createTable:
+            tableName: document_pages
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_document_pages
+              - column:
+                  name: document_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_document_pages_document
+                    references: documents(id)
+              - column:
+                  name: page_number
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: storage_path
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: width_px
+                  type: int
+              - column:
+                  name: height_px
+                  type: int
+              - column:
+                  name: elements
+                  type: jsonb
+
+  - changeSet:
+      id: 001-create-document-types-table
+      author: docuflow
+      changes:
+        - createTable:
+            tableName: document_types
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_document_types
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: varchar(500)
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 001-create-field-definitions-table
+      author: docuflow
+      changes:
+        - createTable:
+            tableName: field_definitions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_field_definitions
+              - column:
+                  name: document_type_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_field_definitions_document_type
+                    references: document_types(id)
+              - column:
+                  name: parent_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_field_definitions_parent
+                    references: field_definitions(id)
+              - column:
+                  name: sort_order
+                  type: int
+                  defaultValue: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: field_key
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: label
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: required
+                  type: boolean
+                  defaultValue: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: varchar(500)
+              - column:
+                  name: regex_pattern
+                  type: varchar(500)
+              - column:
+                  name: enum_values
+                  type: jsonb
+
+  - changeSet:
+      id: 001-create-validation-rules-tables
+      author: docuflow
+      changes:
+        - createTable:
+            tableName: validation_field_rules
+            columns:
+              - column:
+                  name: document_type_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_validation_field_rules_doc_type
+                    references: document_types(id)
+              - column:
+                  name: field_key
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: rule
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: validation_cross_field_rules
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_validation_cross_field_rules
+              - column:
+                  name: document_type_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_validation_cross_field_rules_doc_type
+                    references: document_types(id)
+              - column:
+                  name: expression
+                  type: varchar(1000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: error_message
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: cross_field_rule_affected_fields
+            columns:
+              - column:
+                  name: cross_field_rule_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_cross_field_affected_fields_rule
+                    references: validation_cross_field_rules(id)
+              - column:
+                  name: field_key
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 001-create-routing-rules-tables
+      author: docuflow
+      changes:
+        - createTable:
+            tableName: routing_field_based_rules
+            columns:
+              - column:
+                  name: document_type_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_routing_field_rules_doc_type
+                    references: document_types(id)
+              - column:
+                  name: field_value
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: assignee_group
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 001-add-routing-columns-to-document-types
+      author: docuflow
+      changes:
+        - addColumn:
+            tableName: document_types
+            columns:
+              - column:
+                  name: default_assignee_group
+                  type: varchar(100)
+              - column:
+                  name: sla_hours
+                  type: int
+                  defaultValue: 24
+              - column:
+                  name: auto_approve_threshold_enabled
+                  type: boolean
+                  defaultValue: false
+              - column:
+                  name: auto_approve_confidence
+                  type: float
+                  defaultValue: 0.95
+
+  - changeSet:
+      id: 001-create-indexes
+      author: docuflow
+      changes:
+        - createIndex:
+            tableName: documents
+            indexName: idx_documents_tenant_id
+            columns:
+              - column:
+                  name: tenant_id
+        - createIndex:
+            tableName: documents
+            indexName: idx_documents_document_type_id
+            columns:
+              - column:
+                  name: document_type_id
+        - createIndex:
+            tableName: documents
+            indexName: idx_documents_status
+            columns:
+              - column:
+                  name: status
+        - createIndex:
+            tableName: documents
+            indexName: idx_documents_created_at
+            columns:
+              - column:
+                  name: created_at
+        - createIndex:
+            tableName: document_pages
+            indexName: idx_document_pages_document_id
+            columns:
+              - column:
+                  name: document_id
+        - createIndex:
+            tableName: document_pages
+            indexName: idx_document_pages_page_number
+            columns:
+              - column:
+                  name: page_number
+        - createIndex:
+            tableName: document_types
+            indexName: idx_document_types_tenant_id
+            columns:
+              - column:
+                  name: tenant_id
+        - createIndex:
+            tableName: document_types
+            indexName: idx_document_types_name
+            columns:
+              - column:
+                  name: name
+        - createIndex:
+            tableName: field_definitions
+            indexName: idx_field_definitions_document_type_id
+            columns:
+              - column:
+                  name: document_type_id
+        - createIndex:
+            tableName: field_definitions
+            indexName: idx_field_definitions_parent_id
+            columns:
+              - column:
+                  name: parent_id

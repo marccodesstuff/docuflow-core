@@ -1,0 +1,194 @@
+spring:
+  application:
+    name: docuflow-core
+  
+  # Database
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/docuflow_core}
+    username: ${DATABASE_USER:docuflow}
+    password: ${DATABASE_PASSWORD:docuflow}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+  
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    contexts: ${LIQUIBASE_CONTEXTS:dev}
+  
+  # Kafka
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: docuflow-core
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+  
+  # RabbitMQ (for webhook delivery)
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+  
+  # Security (OAuth2 Resource Server)
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER_URI:http://localhost:8080/realms/docuflow}
+          jwk-set-uri: ${OAUTH2_JWK_SET_URI:http://localhost:8080/realms/docuflow/protocol/openid-connect/certs}
+
+# gRPC Server
+grpc:
+  server:
+    port: ${GRPC_PORT:9090}
+    enable-reflection: true
+    security:
+      enabled: false  # Enable in production with mutual TLS
+
+# Document Storage (S3/MinIO)
+storage:
+  type: ${STORAGE_TYPE:minio}  # minio | s3
+  minio:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
+    bucket: ${MINIO_BUCKET:docuflow}
+    region: us-east-1
+    path-style-access: true
+  s3:
+    region: ${AWS_REGION:us-east-1}
+    bucket: ${AWS_S3_BUCKET:docuflow}
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID:}
+      secret-key: ${AWS_SECRET_ACCESS_KEY:}
+
+# Document Processing Pipeline
+docuflow:
+  pipeline:
+    # Step configurations
+    classify:
+      enabled: true
+      timeout-seconds: 30
+      max-retries: 2
+    ocr:
+      enabled: true
+      timeout-seconds: 120
+      max-retries: 1
+      tesseract:
+        language: eng
+        dpi: 300
+    extract:
+      enabled: true
+      timeout-seconds: 60
+      max-retries: 2
+      ml-sidecar:
+        url: ${ML_SIDECAR_URL:http://localhost:50051}
+        timeout-seconds: 45
+    validate:
+      enabled: true
+      timeout-seconds: 30
+      max-retries: 0
+    export:
+      enabled: true
+      timeout-seconds: 30
+      max-retries: 1
+  
+  # Batch processing
+  batch:
+    chunk-size: 10
+    max-threads: 4
+    job-repository:
+      table-prefix: BATCH_
+  
+  # Webhook delivery
+  webhook:
+    max-delivery-attempts: 5
+    retry-delays-seconds: [60, 300, 900, 3600, 21600]  # 1m, 5m, 15m, 1h, 6h
+    timeout-seconds: 10
+    signature-header: X-DocuFlow-Signature
+
+# Actuator / Observability
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,loggers,beans,conditions
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+
+# Logging
+logging:
+  level:
+    com.docuflow.core: DEBUG
+    org.springframework.batch: INFO
+    org.apache.kafka: WARN
+    io.grpc: INFO
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
+
+---
+# Test Profile
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: jdbc:tc:postgresql:16:///docuflow_core
+    username: test
+    password: test
+  
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers}
+  
+  rabbitmq:
+    host: localhost
+    port: 5672
+
+docuflow:
+  pipeline:
+    classify:
+      enabled: false
+    ocr:
+      enabled: false
+    extract:
+      enabled: false
+      ml-sidecar:
+        url: http://localhost:50051
+    validate:
+      enabled: true
+    export:
+      enabled: false
+
+grpc:
+  server:
+    port: 0  # Random port for tests

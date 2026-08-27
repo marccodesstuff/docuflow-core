@@ -1,0 +1,254 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-create-extraction-results-table
+      author: docuflow
+      changes:
+        - createTable:
+            tableName: extraction_results
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_extraction_results
+              - column:
+                  name: job_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: document_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_extraction_results_document
+                    references: documents(id)
+              - column:
+                  name: status
+                  type: varchar(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: overall_confidence
+                  type: float
+              - column:
+                  name: model_version
+                  type: varchar(100)
+              - column:
+                  name: issues
+                  type: jsonb
+              - column:
+                  name: extracted_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 003-create-extracted-fields-table
+      author: docuflow
+      changes:
+        - createTable:
+            tableName: extracted_fields
+            columns:
+              - column:
+                  name: extraction_result_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_extracted_fields_result
+                    references: extraction_results(id)
+              - column:
+                  name: field_key
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: field_value
+                  type: jsonb
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 003-create-table-extractions-table
+      author: docuflow
+      changes:
+        - createTable:
+            tableName: table_extractions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_table_extractions
+              - column:
+                  name: extraction_result_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_table_extractions_result
+                    references: extraction_results(id)
+              - column:
+                  name: table_id
+                  type: varchar(100)
+              - column:
+                  name: confidence
+                  type: float
+              - column:
+                  name: bbox_x
+                  type: float
+              - column:
+                  name: bbox_y
+                  type: float
+              - column:
+                  name: bbox_width
+                  type: float
+              - column:
+                  name: bbox_height
+                  type: float
+              - column:
+                  name: bbox_element_type
+                  type: varchar(50)
+              - column:
+                  name: bbox_confidence
+                  type: float
+
+  - changeSet:
+      id: 003-create-table-extraction-headers-table
+      author: docuflow
+      changes:
+        - createTable:
+            tableName: table_extraction_headers
+            columns:
+              - column:
+                  name: table_extraction_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_table_headers_extraction
+                    references: table_extractions(id)
+              - column:
+                  name: header
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: header_order
+                  type: int
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 003-create-table-rows-table
+      author: docuflow
+      changes:
+        - createTable:
+            tableName: table_rows
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_table_rows
+              - column:
+                  name: table_extraction_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_table_rows_extraction
+                    references: table_extractions(id)
+              - column:
+                  name: row_order
+                  type: int
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 003-create-table-row-cells-table
+      author: docuflow
+      changes:
+        - createTable:
+            tableName: table_row_cells
+            columns:
+              - column:
+                  name: table_row_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_table_row_cells_row
+                    references: table_rows(id)
+              - column:
+                  name: cell
+                  type: varchar(500)
+              - column:
+                  name: cell_order
+                  type: int
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 003-create-table-row-cell-confidences-table
+      author: docuflow
+      changes:
+        - createTable:
+            tableName: table_row_cell_confidences
+            columns:
+              - column:
+                  name: table_row_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_table_row_confidences_row
+                    references: table_rows(id)
+              - column:
+                  name: confidence
+                  type: float
+              - column:
+                  name: confidence_order
+                  type: int
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 003-create-extraction-indexes
+      author: docuflow
+      changes:
+        - createIndex:
+            tableName: extraction_results
+            indexName: idx_extraction_results_job_id
+            columns:
+              - column:
+                  name: job_id
+        - createIndex:
+            tableName: extraction_results
+            indexName: idx_extraction_results_document_id
+            columns:
+              - column:
+                  name: document_id
+        - createIndex:
+            tableName: extraction_results
+            indexName: idx_extraction_results_status
+            columns:
+              - column:
+                  name: status
+        - createIndex:
+            tableName: extracted_fields
+            indexName: idx_extracted_fields_result_id
+            columns:
+              - column:
+                  name: extraction_result_id
+        - createIndex:
+            tableName: table_extractions
+            indexName: idx_table_extractions_result_id
+            columns:
+              - column:
+                  name: extraction_result_id
+        - createIndex:
+            tableName: table_rows
+            indexName: idx_table_rows_extraction_id
+            columns:
+              - column:
+                  name: table_extraction_id
